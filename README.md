@@ -105,7 +105,7 @@ The `if: failure()` condition only triggers when a **previous step** in the same
 
 Issues must be enabled in the repository settings: **Settings → Features → Issues**.
 
-### Duplicate issues are not skipped
+### When are new issues created despite existing ones
 
 The action matches open issues by exact title (`ci: step <name> failed in workflow <workflow>`). If the issue was closed or the title format changed, a new issue will be created.
 
