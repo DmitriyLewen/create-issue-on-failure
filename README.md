@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      actions: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,6 +37,7 @@ When a step fails, the action creates an issue like this:
 
 - **Workflow:** My CI
 - **Job:** build
+- **Failed step:** Run tests
 - **Run:** #42
 - **Triggered by:** push
 - **Actor:** octocat
@@ -46,13 +48,14 @@ When a step fails, the action creates an issue like this:
 
 ## Permissions
 
-The action requires `issues: write` permission to create issues. Set it at the job level:
+The action requires `issues: write` permission to create issues and `actions: read` to look up the failed step name. Set them at the job level:
 
 ```yaml
 jobs:
   build:
     permissions:
       issues: write
+      actions: read
 ```
 
 Or at the workflow level to apply to all jobs:
@@ -60,6 +63,7 @@ Or at the workflow level to apply to all jobs:
 ```yaml
 permissions:
   issues: write
+  actions: read
 ```
 
 > **Note:** If your repository has default workflow permissions set to "read-only" in Settings → Actions → General, you must explicitly grant `issues: write` in the workflow file.
