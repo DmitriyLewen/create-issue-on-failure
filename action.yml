@@ -7,10 +7,21 @@ runs:
     - name: Create issue
       shell: bash
       run: |
-        gh api \
+        TITLE="ci: workflow ${{ github.workflow }} failed"
+
+        EXISTING_URL=$(gh api \
+          "/repos/${{ github.repository }}/issues?state=open&per_page=100" \
+          --jq ".[] | select(.title == \"$TITLE\") | .html_url" | head -1)
+
+        if [ -n "$EXISTING_URL" ]; then
+          echo "Issue already exists: $EXISTING_URL"
+          exit 0
+        fi
+
+        CREATED_URL=$(gh api \
           --method POST \
           /repos/${{ github.repository }}/issues \
-          -f title="ci: workflow ${{ github.workflow }} failed" \
+          -f title="$TITLE" \
           -f body="## Workflow Failure Report
 
         - **Workflow:** ${{ github.workflow }}
@@ -20,4 +31,7 @@ runs:
         - **Actor:** ${{ github.actor }}
         - **Branch:** ${{ github.ref_name }}
         - **Commit:** ${{ github.sha }}
-        - **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        - **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+          --jq ".html_url")
+
+        echo "Issue created: $CREATED_URL"
