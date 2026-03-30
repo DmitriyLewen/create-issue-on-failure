@@ -11,7 +11,8 @@ runs:
         for i in 1 2 3 4 5; do
           FAILED_STEPS=$(gh api \
             "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
-            --jq ".jobs[] | select(.name == \"${{ github.job }}\") | .steps[] | select(.conclusion == \"failure\") | .name")
+            | jq -r --arg job "${{ github.job }}" \
+              '.jobs[] | select(.name == $job) | .steps[] | select(.conclusion == "failure") | .name')
           [ -n "$FAILED_STEPS" ] && break
           sleep 2
         done
