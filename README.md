@@ -102,7 +102,7 @@ Issues must be enabled in the repository settings: **Settings → Features → I
 
 ### Multiple issues created for the same failure
 
-Each failed run creates one issue. If you want to avoid duplicates across re-runs, add logic to search for an existing open issue before calling this action, or close/deduplicate issues after the fact.
+The action automatically skips creating a new issue if an open issue with the same title already exists. When a duplicate is detected, the step logs `Issue already exists: <url>` and exits without creating a new issue.
 
 ### Action creates issues even on pull requests from forks
 
