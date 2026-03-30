@@ -1,13 +1,11 @@
 name: Create Issue on Failure
-description: Creates a GitHub Issue with workflow failure details when a previous step fails.
+description: Creates a GitHub Issue with workflow failure details when a previous step fails. Requires permissions - issues: write.
 
 runs:
   using: composite
   steps:
     - name: Create issue
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
       run: |
         gh issue create \
           --repo "${{ github.repository }}" \
