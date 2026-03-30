@@ -7,10 +7,11 @@ runs:
     - name: Create issue
       shell: bash
       run: |
-        gh issue create \
-          --repo "${{ github.repository }}" \
-          --title "ci: workflow ${{ github.workflow }} failed" \
-          --body "## Workflow Failure Report
+        gh api \
+          --method POST \
+          /repos/${{ github.repository }}/issues \
+          -f title="ci: workflow ${{ github.workflow }} failed" \
+          -f body="## Workflow Failure Report
 
         - **Workflow:** ${{ github.workflow }}
         - **Job:** ${{ github.job }}
