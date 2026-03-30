@@ -10,6 +10,7 @@ runs:
         GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
       run: |
         gh issue create \
+          --repo "${{ github.repository }}" \
           --title "ci: workflow ${{ github.workflow }} failed" \
           --body "## Workflow Failure Report
 
