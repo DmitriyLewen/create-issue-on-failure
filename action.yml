@@ -1,5 +1,5 @@
 name: Create Issue on Failure
-description: Creates a GitHub Issue with workflow failure details when a previous step fails. Requires permissions - issues: write.
+description: "Creates a GitHub Issue with workflow failure details when a previous step fails. Requires permissions: issues: write."
 
 runs:
   using: composite
