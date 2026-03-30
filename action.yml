@@ -1,0 +1,23 @@
+name: Create Issue on Failure
+description: Creates a GitHub Issue with workflow failure details when a previous step fails.
+
+runs:
+  using: composite
+  steps:
+    - name: Create issue
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+      run: |
+        gh issue create \
+          --title "ci: workflow ${{ github.workflow }} failed" \
+          --body "## Workflow Failure Report
+
+        - **Workflow:** ${{ github.workflow }}
+        - **Job:** ${{ github.job }}
+        - **Run:** #${{ github.run_number }}
+        - **Triggered by:** ${{ github.event_name }}
+        - **Actor:** ${{ github.actor }}
+        - **Branch:** ${{ github.ref_name }}
+        - **Commit:** ${{ github.sha }}
+        - **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
