@@ -10,7 +10,6 @@ runs:
         FAILED_STEPS=""
         PREV_COUNT=-1
         for i in 1 2 3 4 5; do
-          sleep 2
           FAILED_STEPS=$(gh api \
             "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
             | jq -r --arg job "${{ github.job }}" \
@@ -18,6 +17,7 @@ runs:
           COUNT=$(echo "$FAILED_STEPS" | grep -c . || true)
           [ "$COUNT" -gt 0 ] && [ "$COUNT" -eq "$PREV_COUNT" ] && break
           PREV_COUNT=$COUNT
+          sleep 2
         done
 
         if [ -z "$FAILED_STEPS" ]; then
@@ -26,8 +26,11 @@ runs:
         fi
 
         while IFS= read -r STEP_NAME; do
+          [ -z "$STEP_NAME" ] && continue
+
           TITLE="ci: step $STEP_NAME failed in workflow ${{ github.workflow }}"
 
+          # --paginate fetches all pages; each page is a JSON array processed by jq in sequence
           EXISTING_URL=$(gh api --paginate \
             "/repos/${{ github.repository }}/issues?state=open&per_page=100" \
             | jq -r --arg title "$TITLE" '.[] | select(.title == $title) | .html_url' \
@@ -38,7 +41,7 @@ runs:
             continue
           fi
 
-          CREATED_URL=$(gh api \
+          if ! CREATED_URL=$(gh api \
             --method POST \
             /repos/${{ github.repository }}/issues \
             -f title="$TITLE" \
@@ -50,7 +53,10 @@ runs:
         - **Actor:** ${{ github.actor }}
         - **Commit:** ${{ github.sha }}
         - **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --jq ".html_url")
+            --jq ".html_url"); then
+            echo "::warning::Failed to create issue for step '$STEP_NAME'. Continuing with remaining steps."
+            continue
+          fi
 
           echo "Issue created: $CREATED_URL"
         done <<< "$FAILED_STEPS"

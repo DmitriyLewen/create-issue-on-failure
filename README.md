@@ -109,6 +109,8 @@ Issues must be enabled in the repository settings: **Settings → Features → I
 
 The action matches open issues by exact title (`ci: step <name> failed in workflow <workflow>`). If the issue was closed or the title format changed, a new issue will be created.
 
+> **Note for users upgrading from v1 (single issue per workflow):** The issue title format changed from `ci: workflow <name> failed` to `ci: step <name> failed in workflow <name>`. Previously created open issues will not be recognized as duplicates and new issues will be created on the first run after upgrade.
+
 ### Action creates issues even on pull requests from forks
 
 Fork PRs run with a read-only `GITHUB_TOKEN` and cannot create issues. The `gh api` call will fail silently or return a 403. To avoid this, add a check:
