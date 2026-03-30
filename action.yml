@@ -18,6 +18,17 @@ runs:
           exit 0
         fi
 
+        FAILED_STEP=$(gh api \
+          "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+          --jq ".jobs[] | select(.name == \"${{ github.job }}\") | .steps[] | select(.conclusion == \"failure\") | .name" \
+          | head -1)
+
+        FAILED_STEP_LINE=""
+        if [ -n "$FAILED_STEP" ]; then
+          FAILED_STEP_LINE="
+        - **Failed step:** $FAILED_STEP"
+        fi
+
         CREATED_URL=$(gh api \
           --method POST \
           /repos/${{ github.repository }}/issues \
@@ -25,7 +36,7 @@ runs:
           -f body="## Workflow Failure Report
 
         - **Workflow:** ${{ github.workflow }}
-        - **Job:** ${{ github.job }}
+        - **Job:** ${{ github.job }}$FAILED_STEP_LINE
         - **Run:** #${{ github.run_number }}
         - **Triggered by:** ${{ github.event_name }}
         - **Actor:** ${{ github.actor }}
