@@ -1,5 +1,5 @@
 name: Create Issue on Failure
-description: "Creates a GitHub Issue with workflow failure details when a previous step fails. Requires permissions: issues: write."
+description: "Creates a GitHub Issue per failed step with workflow failure details when a previous step fails. Requires permissions: issues: write, actions: read."
 
 runs:
   using: composite
@@ -7,47 +7,45 @@ runs:
     - name: Create issue
       shell: bash
       run: |
-        TITLE="ci: workflow ${{ github.workflow }} failed"
-
-        EXISTING_URL=$(gh api \
-          "/repos/${{ github.repository }}/issues?state=open&per_page=100" \
-          --jq ".[] | select(.title == \"$TITLE\") | .html_url" | head -1)
-
-        if [ -n "$EXISTING_URL" ]; then
-          echo "Issue already exists: $EXISTING_URL"
-          exit 0
-        fi
-
-        FAILED_STEP=""
+        FAILED_STEPS=""
         for i in 1 2 3 4 5; do
-          FAILED_STEP=$(gh api \
+          FAILED_STEPS=$(gh api \
             "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
-            --jq ".jobs[] | select(.name == \"${{ github.job }}\") | .steps[] | select(.conclusion == \"failure\") | .name" \
-            | head -1)
-          [ -n "$FAILED_STEP" ] && break
+            --jq ".jobs[] | select(.name == \"${{ github.job }}\") | .steps[] | select(.conclusion == \"failure\") | .name")
+          [ -n "$FAILED_STEPS" ] && break
           sleep 2
         done
 
-        FAILED_STEP_LINE=""
-        if [ -n "$FAILED_STEP" ]; then
-          FAILED_STEP_LINE="
-        - **Failed step:** $FAILED_STEP"
+        if [ -z "$FAILED_STEPS" ]; then
+          echo "::error::No failed steps found after retries. This is unexpected — the action should only run on failure."
+          exit 1
         fi
 
-        CREATED_URL=$(gh api \
-          --method POST \
-          /repos/${{ github.repository }}/issues \
-          -f title="$TITLE" \
-          -f body="## Workflow Failure Report
+        while IFS= read -r STEP_NAME; do
+          TITLE="ci: step $STEP_NAME failed in workflow ${{ github.workflow }}"
+
+          EXISTING_URL=$(gh api \
+            "/repos/${{ github.repository }}/issues?state=open&per_page=100" \
+            --jq ".[] | select(.title == \"$TITLE\") | .html_url" | head -1)
+
+          if [ -n "$EXISTING_URL" ]; then
+            echo "Issue already exists: $EXISTING_URL"
+            continue
+          fi
+
+          CREATED_URL=$(gh api \
+            --method POST \
+            /repos/${{ github.repository }}/issues \
+            -f title="$TITLE" \
+            -f body="## Workflow Failure Report
 
         - **Workflow:** ${{ github.workflow }}
-        - **Job:** ${{ github.job }}$FAILED_STEP_LINE
-        - **Run:** #${{ github.run_number }}
+        - **Failed step:** $STEP_NAME
         - **Triggered by:** ${{ github.event_name }}
         - **Actor:** ${{ github.actor }}
-        - **Branch:** ${{ github.ref_name }}
         - **Commit:** ${{ github.sha }}
         - **Run URL:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-          --jq ".html_url")
+            --jq ".html_url")
 
-        echo "Issue created: $CREATED_URL"
+          echo "Issue created: $CREATED_URL"
+        done <<< "$FAILED_STEPS"

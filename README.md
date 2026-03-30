@@ -1,6 +1,6 @@
 # create-issue-on-failure
 
-A GitHub composite action that automatically creates a GitHub Issue with failure details when a previous workflow step fails.
+A GitHub composite action that automatically creates a separate GitHub Issue per failed step with failure details when a workflow job fails.
 
 ## Usage
 
@@ -27,28 +27,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-When a step fails, the action creates an issue like this:
+When steps fail, the action creates one issue per failed step. For example, if `Run tests` fails:
 
-**Title:** `ci: workflow <workflow-name> failed`
+**Title:** `ci: step Run tests failed in workflow My CI`
 
 **Body:**
 ```
 ## Workflow Failure Report
 
 - **Workflow:** My CI
-- **Job:** build
 - **Failed step:** Run tests
-- **Run:** #42
 - **Triggered by:** push
 - **Actor:** octocat
-- **Branch:** main
 - **Commit:** abc1234...
 - **Run URL:** https://github.com/owner/repo/actions/runs/123456789
 ```
 
+If multiple steps fail, a separate issue is created for each one. Duplicate issues (same title, already open) are skipped automatically.
+
 ## Permissions
 
-The action requires `issues: write` permission to create issues and `actions: read` to look up the failed step name. Set them at the job level:
+The action requires `issues: write` permission to create issues and `actions: read` to look up the failed step names. Set them at the job level:
 
 ```yaml
 jobs:
@@ -67,6 +66,8 @@ permissions:
 ```
 
 > **Note:** If your repository has default workflow permissions set to "read-only" in Settings → Actions → General, you must explicitly grant `issues: write` in the workflow file.
+
+The action requires `jq` to be available on the runner. It is pre-installed on all GitHub-hosted runners (`ubuntu-*`, `macos-*`, `windows-*`). For self-hosted runners, install it manually.
 
 The `GH_TOKEN` environment variable must be set to a token with issue creation access. `secrets.GITHUB_TOKEN` works for repositories within the same organization. For cross-repository issue creation, use a Personal Access Token (PAT) with `repo` scope.
 
@@ -104,9 +105,9 @@ The `if: failure()` condition only triggers when a **previous step** in the same
 
 Issues must be enabled in the repository settings: **Settings → Features → Issues**.
 
-### Multiple issues created for the same failure
+### Duplicate issues are not skipped
 
-The action automatically skips creating a new issue if an open issue with the same title already exists. When a duplicate is detected, the step logs `Issue already exists: <url>` and exits without creating a new issue.
+The action matches open issues by exact title (`ci: step <name> failed in workflow <workflow>`). If the issue was closed or the title format changed, a new issue will be created.
 
 ### Action creates issues even on pull requests from forks
 
