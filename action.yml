@@ -18,10 +18,15 @@ runs:
           exit 0
         fi
 
-        FAILED_STEP=$(gh api \
-          "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
-          --jq ".jobs[] | select(.name == \"${{ github.job }}\") | .steps[] | select(.conclusion == \"failure\") | .name" \
-          | head -1)
+        FAILED_STEP=""
+        for i in 1 2 3 4 5; do
+          FAILED_STEP=$(gh api \
+            "/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+            --jq ".jobs[] | select(.name == \"${{ github.job }}\") | .steps[] | select(.conclusion == \"failure\") | .name" \
+            | head -1)
+          [ -n "$FAILED_STEP" ] && break
+          sleep 2
+        done
 
         FAILED_STEP_LINE=""
         if [ -n "$FAILED_STEP" ]; then
